@@ -1,10 +1,13 @@
 from libqtile.config import Key, Screen, Group
 from libqtile.command import lazy
 from libqtile import layout, bar, widget
+from libqtile import hook
 
 mod = "mod4"
+alt = "mod1"
 
 keys = [
+    
     Key(
         [mod], "k",
         lazy.layout.down()
@@ -40,21 +43,22 @@ keys = [
         [mod, "shift"], "Return",
         lazy.layout.toggle_split()
     ),
-    Key([mod], "Return", lazy.spawn("xterm")),
+    Key([mod], "space", lazy.nextlayout()),
 
-    Key([mod], "h",      lazy.to_screen(1)),
-    Key([mod], "l",      lazy.to_screen(0)),
-    Key([mod,"control"], "Tab",    lazy.nextlayout()),
-    Key([mod,"control"], "w",      lazy.window.kill()),
-    Key([mod,"control"], "q",      lazy.shutdown()),
-    Key([mod, "control",], "r", lazy.restart()),
+    Key([mod], "r", lazy.spawncmd()),
+    Key([mod], "x", lazy.spawn("xchat")),
+    Key([mod], "w", lazy.spawn("firefox")),
+    Key([mod], "Return", lazy.spawn("tilda")),
+    Key([mod], "f", lazy.spawn("pcmanfm")),
+    Key([mod], "s", lazy.spawn("skype")),
+    Key([mod], "g", lazy.spawn("gimp")),
 
-    #programi
-    Key([mod], "r"     , lazy.spawncmd()),
-    Key([mod], "x"     , lazy.spawn("xchat")),
-    Key([mod], "w"     , lazy.spawn("chromium-browser")),
-    Key([mod], "Return", lazy.spawn("xfce4-terminal")),
-    Key([mod], "f"     , lazy.spawn("pcmanfm")),
+    # alt
+    Key([alt], "t", lazy.window.toggle_floating()),
+    Key([alt], "w", lazy.window.kill()),
+    Key([alt], "r", lazy.restart()),
+    Key([alt], "q", lazy.shutdown()),
+    Key([alt], "F10", lazy.spawn("scrot -b -d 1 '%Y:%m:%d:%H:%M:%S.png' -e 'mv $f ~/Desktop/'")),
 ]
 
 groups = [
@@ -66,29 +70,37 @@ groups = [
     Group("6"),
     Group("7"),
     Group("8"),
-    Group("9"),
+    Group("9")
 ]
+
 for i in groups:
+    # mod1 + letter of group = switch to group
     keys.append(
         Key([mod], i.name, lazy.group[i.name].toscreen())
     )
 
+    # mod1 + shift + letter of group = switch to & move focused window to group
     keys.append(
         Key([mod, "shift"], i.name, lazy.window.togroup(i.name))
     )
+
+keys.append(Key([mod, "control"], "Right", lazy.screen.nextgroup()))
+keys.append(Key([mod, "control"], "Left", lazy.screen.prevgroup()))
+
 
 dgroups_key_binder = None
 dgroups_app_rules = []
 
 layouts = [
     layout.Max(),
+    layout.TreeTab(),
     layout.Stack(num_stacks=2)
 ]
 
 widget_defaults = dict(
-    font = 'Arial',
-    fontsize = 12,
-    padding = 3,
+    font='Arial',
+    fontsize=16,
+    padding=3,
 )
 
 screens = [
@@ -98,6 +110,7 @@ screens = [
                 widget.GroupBox(),
                 widget.Prompt(),
                 widget.WindowName(),
+                # widget.TextBox("default config", name="default"),
                 widget.Systray(),
                 widget.Clock(format='%Y-%m-%d %a %I:%M %p'),
             ],
@@ -113,3 +126,10 @@ cursor_warp = False
 floating_layout = layout.Floating()
 mouse = ()
 auto_fullscreen = True
+wmname = "qtile"
+
+
+@hook.subscribe.client_new
+def dialogs(window):
+    if(window.window.get_wm_type() == 'dialog' or window.window.get_wm_transient_for()):
+        window.floating = True
